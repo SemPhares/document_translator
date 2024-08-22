@@ -1,0 +1,14 @@
+*.png
+*.jpg
+*.jpeg
+*.pdf
+
+# Python
+*.pyc
+*.egg-info/
+.vscode/
+__pycache__/**/*.pyc
+.DS_Store
+log/*
+config/secrets.py
+_old/
