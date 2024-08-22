@@ -12,7 +12,7 @@ Document Translator is an application designed to translate documents effortless
 
 Before you can run Document Translator, ensure you have the following:
 
-- Python 3.6 or newer installed on your system.
+- Python 3.10 or newer installed on your system.
 - An API key from either Gemini or OpenAI, depending on your preference for the translation service.
 
 ## Installation
