@@ -1,10 +1,10 @@
 import streamlit as st
 import PyPDF2
 import concurrent.futures
-from utils.log import logger
-from config.secrets import google_api_key
-from translators.llm_translator import translate_page
-from utils.pdf_utils import extract_images_from_pdf, save_translated_pdf
+from src.utils.log import logger
+from src.config.secrets import google_api_key
+from src.translators.llm_translator import translate_page
+from src.utils.pdf_utils import extract_images_from_pdf, save_translated_pdf
 
 
 st.title("PDF Translator with Image Extraction")

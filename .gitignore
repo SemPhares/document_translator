@@ -10,5 +10,5 @@
 __pycache__/**/*.pyc
 .DS_Store
 log/*
-config/secrets.py
+src/config/secrets.py
 _old/
