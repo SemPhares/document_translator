@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from app import st  # Assuming your Streamlit app code is in a function named `app` in `app.py`
+from src.app import st  # Assuming your Streamlit app code is in a function named `app` in `app.py`
 
 
 def test_api_key_validation_success(mock_streamlit, mock_validate_api_key):

@@ -13,3 +13,4 @@ __pycache__/
 log/*
 src/config/secrets.py
 _old/
+test/

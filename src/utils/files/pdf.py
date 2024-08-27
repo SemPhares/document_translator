@@ -1,23 +1,21 @@
 import PyPDF2
-from PIL import Image
 import io
 from pdf2image import convert_from_path
-from src.utils.log import logger
-import io
-import typing as t
-import PyPDF2
+# from utils.log import logger
 from reportlab.pdfgen.canvas import Canvas
-from decimal import Decimal
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import mm
+from reportlab.lib import utils
 
 
-def pdf_reader(pdf_path:str):
+
+def pdf_reader(pdf_path:str) -> list[PyPDF2.PageObject]:
     """
     
     """
     reader = PyPDF2.PdfReader(pdf_path)
-    logger.info(f"Number of pages: {len(reader.pages)}")
-    pages = [reader.pages[i] for i in range(len(reader.pages))]
-    return pages
+    # logger.info(f"Number of pages: {len(reader.pages)}")
+    return reader.pages
 
 
 def extract_text_from_pdf_page(pages:list[PyPDF2.PageObject],
@@ -28,54 +26,79 @@ def extract_text_from_pdf_page(pages:list[PyPDF2.PageObject],
     return page.extract_text()
 
 
-def extract_images_from_pdf(pdf_path:str) -> list[str]:
-    images = convert_from_path(pdf_path)
-    image_files = []
-    for i, image in enumerate(images):
-        image_file = f'image_{i + 1}.png'
-        image.save(image_file, 'PNG')
-        image_files.append(image_file)
+def extract_image_from_pdf_page(pages:list[PyPDF2.PageObject],
+                                page_num:int) -> list:
+    """
+    """
+    page = pages[page_num]
+    return page.images
+
+
+def images_to_dict_bytes(images_pages:dict[int, list]) -> dict[str, bytes]:
+    image_files = {}
+    for page_idx, images_list in images_pages.items():
+        for image_idx, image in enumerate(images_list):
+            image_file = f"image_{page_idx}_{image_idx}.png"
+            image_files[image_file] = image.data
     return image_files
 
 
-def save_translated_pdf(translated_pages: dict[int, str],
-                        pages_list: list[PyPDF2.PageObject]) -> io.BytesIO:
+def save_translated_pdf(translated_pages: dict[int, str]) -> io.BytesIO:
     output_pdf = io.BytesIO()
-    pdf_writer = PyPDF2.PdfWriter()
+    
+    # Dimensions de la page A4
+    page_width, page_height = A4
+    
+    # Marges en millimètres, converties en points
+    left_margin = 20 * mm
+    right_margin = 20 * mm
+    top_margin = 20 * mm
+    bottom_margin = 20 * mm
+    
+    # Calcul de la largeur et de la hauteur utilisables
+    usable_width = page_width - left_margin - right_margin
+
+    # Créer le canvas ReportLab
+    c = Canvas(output_pdf, pagesize=A4)
+
+    # Paramètres de police
+    c.setFont("Helvetica", 12)
+    line_height = 14  # Hauteur de ligne en points
 
     for page_num, translated_text in sorted(translated_pages.items()):
-        # Get the original page dimensions
-        original_page = pages_list[page_num]
-        page_width = original_page.mediabox.width
-        page_height = original_page.mediabox.height
+        # Diviser le texte en lignes pour s'assurer qu'il s'adapte à la largeur de la page
+        lines = utils.simpleSplit(translated_text, 'Helvetica', 12, usable_width)
+
+        # Initialiser les positions de départ pour écrire
+        current_y = page_height - top_margin
         
-        # Create a temporary PDF with the translated text
-        translated_pdf = io.BytesIO()
-        c = Canvas(translated_pdf, pagesize=(page_width, page_height))
-        
-        # Add the translated text to the canvas
-        c.drawString(72, float(page_height - Decimal('72')), translated_text)  # Adjust position as needed
+        for line in lines:
+            # Vérifier si la page a encore assez d'espace pour écrire une ligne
+            if current_y - line_height < bottom_margin:
+                c.showPage()  # Créer une nouvelle page
+                current_y = page_height - top_margin  # Réinitialiser la position en haut de la nouvelle page
+
+            # Écrire la ligne et passer à la suivante
+            c.drawString(left_margin, current_y, line)
+            current_y -= line_height
+
+        # Passer à une nouvelle page après avoir écrit le texte traduit d'une page originale
         c.showPage()
-        c.save()
-        
-        translated_pdf.seek(0)
-        
-        # Read the translated text PDF as a page
-        translated_reader = PyPDF2.PdfReader(translated_pdf)
-        translated_page = translated_reader.pages[0]
-        
-        # Add the translated page to the writer
-        pdf_writer.add_page(translated_page)
-    
-    # Write the output PDF to a BytesIO object
-    pdf_writer.write(output_pdf)
+
+    c.save()
     output_pdf.seek(0)
     return output_pdf
 
 
 
 if __name__ == "__main__":
-    pdf_path = "document_translator/test/doc/Ascension Day of Jesus Christ (Poster).pdf"
-    pages = pdf_reader(pdf_path)
-    print(extract_text_from_pdf_page(pages, 0))
-    print(extract_images_from_pdf(pdf_path))
+    pdf_path = "/Users/elsem/Documents/code/document_translator/test/doc/Ascension Day of Jesus Christ (Poster).pdf"
+    list_pages = pdf_reader(pdf_path)
+    # translated_pages = {0: "lorem ipsum \n"*260, 1: "ceci est un test "*10000}
+    pages = extract_text_from_pdf_page(list_pages, 0)+"\n"*50
+    translated_pages = {i: pages for i in range(10)}
+    out_pdf = save_translated_pdf(translated_pages).read()
+    with open("/Users/elsem/Documents/code/document_translator/test/doc/test-translated.pdf", "wb") as f:
+        f.write(out_pdf)
+
+    # print(extract_images_from_pdf(pdf_path))

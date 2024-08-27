@@ -2,8 +2,7 @@ import typing as t
 import concurrent.futures
 from openai import OpenAI  # for calling the OpenAI API
 from google import generativeai as genai
-from src.utils.utils import extract_text_from_page
-from src.utils.log import logger
+from utils.utils import extract_text_from_page, extract_images_from_page
 
 # Set your OpenAI API key
 
@@ -11,7 +10,7 @@ from src.utils.log import logger
 def translate_text_openai(text:str, language:str) -> str:
 
     client=OpenAI() #api_key=openai_api_key
-    system_prompt = "You are an expert in translations, you will be sent an article and you have to translate it into the language suggested"
+    system_prompt = "You are an expert in translations, you will be sent an article and you have to translate it into the language suggested. You have to respect the original punctuation and style."
     completion = client.chat.completions.create(
     model="gpt-4o",
     messages=[
@@ -27,7 +26,10 @@ def translate_text_gemini(text:str,
     # genai.configure(api_key= google_api_key)
     model = genai.GenerativeModel(model_name = "models/gemini-1.0-pro-latest", 
                                   generation_config = {"temperature" : 0.3})
-    prompt=f"Please translate the following text to {target_language}:\n\n{text}" 
+    prompt=f"""You are an expert in translations, you will be sent an article and you have to translate it into the language suggested.
+                You have to respect the original punctuation and style.
+
+                Please translate the following text to {target_language}:\n\n{text}"""
     response = model.generate_content(prompt).text
     return response.strip()
 
@@ -38,19 +40,22 @@ def translate_page(pages:list,
                    llm_to_use:str ='google') -> t.Tuple[int, str]:
 
     text = extract_text_from_page(pages, page_num)
+    # images = extract_images_from_page(pages, page_num)
+    images = []
     if llm_to_use == 'google':
         translated_text = translate_text_gemini(text, target_language)
     else:
         translated_text = translate_text_openai(text, target_language)
-    return page_num, translated_text
+    return page_num, translated_text , images
 
 
 def concurent_translate(pages:list,
                         target_language:str, 
-                        llm_to_use:str='google'):
+                        llm_to_use:str='google') -> t.Tuple[dict[int, str], dict[int, list]]:
     """
     """
     translated_pages = {}
+    images_pages = {}
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = [executor.submit(translate_page, 
@@ -61,7 +66,8 @@ def concurent_translate(pages:list,
                 for page_num in range(len(pages))]
         
         for future in concurrent.futures.as_completed(futures):                
-            page_num, translated_text = future.result()
+            page_num, translated_text, images = future.result()
             translated_pages[page_num] = translated_text
+            images_pages[page_num] = images
 
-    return translated_pages
+    return translated_pages, images_pages
