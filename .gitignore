@@ -3,6 +3,7 @@
 *.jpeg
 *.pdf
 
+.github/
 # Python
 *.pyc
 *.egg-info/
