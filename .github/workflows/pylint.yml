@@ -1,23 +1,28 @@
-name: Pylint
-
-on: [push]
+name: check_code_quality
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
-  build:
+  check_code_quality:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.10"]
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pylint
-    - name: Analysing the code with pylint
-      run: |
-        pylint $(git ls-files '*.py')
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install black isort Pylint
+      - name: Run isort
+        run: |
+          isort .
+      - name: Run black
+        run: |
+          black .
