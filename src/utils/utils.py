@@ -17,20 +17,25 @@ def validate_api_key(api_key:str):
         from google import generativeai as genai
         genai.configure(api_key= api_key)        
         model = genai.GenerativeModel(model_name = "gemini-1.0-pro-latest")
+        response = model.generate_content("Translate the following text to French: 'Hello, how are you?'").text
         return {"status": "success", "message": "google"}
     except Exception as e:
         logger.error(f"{e.__class__.__name__}: {e}")
-        #  validate openaa api key
+        #  validate openAI api key
         try:
             from openai import OpenAI
-            OpenAI.api_key = api_key
-            response = OpenAI.completions.create(
-                engine="text-davinci-002",
-                prompt="Translate the following text to French: 'Hello, how are you?'")
+            client=OpenAI(api_key=api_key)
+            response = client.chat.completions.create(
+                model="text-davinci-002",
+                messages=[
+                {"role": "system", "content": "You are an expert in translations"},
+                {"role": "user", "content": "Translate the following text to French: 'Hello, how are you?"}
+                    ]
+            )
             return {"status": "success", "message": "openai"}
         
         except Exception as e:
-            st.error(f"{e.__class__.__name__}: {e}")
+            st.error("Invalid API key")
             logger.error(f"{e.__class__.__name__}: {e}")
             return {"status": "fail", "message": "Invalid API key"}
 

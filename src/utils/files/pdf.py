@@ -1,7 +1,7 @@
 import PyPDF2
 import io
 from pdf2image import convert_from_path
-# from utils.log import logger
+from utils.log import logger
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
@@ -14,7 +14,7 @@ def pdf_reader(pdf_path:str) -> list[PyPDF2.PageObject]:
     
     """
     reader = PyPDF2.PdfReader(pdf_path)
-    # logger.info(f"Number of pages: {len(reader.pages)}")
+    logger.info(f"Number of pages: {len(reader.pages)}")
     return reader.pages
 
 
